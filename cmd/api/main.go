@@ -25,14 +25,14 @@ func (s *Server) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var event models.Event
+	var event models.EventEnvelope
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
 
 	// Basic Validation
-	if event.UserID == "" || event.Source == "" {
+	if event.ID == "" || event.Source == "" || event.EventType == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}

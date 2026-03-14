@@ -2,23 +2,27 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/IlfGauhnith/ReactiveBridge/internal/models"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
-	"github.com/IlfGauhnith/ReactiveBridge/internal/models"
 )
+
+// KinesisAPI defines the interface for the Kinesis client.
+type KinesisAPI interface {
+	PutRecord(ctx context.Context, params *kinesis.PutRecordInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordOutput, error)
+}
 
 // Producer defines the interface for publishing events.
 type Producer interface {
-	Publish(ctx context.Context, event models.Event) error
+	Publish(ctx context.Context, event models.EventEnvelope) error
 }
 
 // KinesisProducer handles publishing to AWS Kinesis.
 type KinesisProducer struct {
-	client     *kinesis.Client
+	client     KinesisAPI
 	streamName string
 }
 
@@ -36,17 +40,16 @@ func NewKinesisProducer(ctx context.Context, streamName string) (*KinesisProduce
 }
 
 // Publish sends an event to the Kinesis stream.
-func (k *KinesisProducer) Publish(ctx context.Context, event models.Event) error {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event: %w", err)
-	}
-
-	_, err = k.client.PutRecord(ctx, &kinesis.PutRecordInput{
-		Data:         data,
-		PartitionKey: aws.String(event.UserID), // Use UserID for ordering guarantees
+func (k *KinesisProducer) Publish(ctx context.Context, event models.EventEnvelope) error {
+	_, err := k.client.PutRecord(ctx, &kinesis.PutRecordInput{
+		Data:         event.Data,
+		PartitionKey: aws.String(event.Source),
 		StreamName:   aws.String(k.streamName),
 	})
 
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to put record: %w", err)
+	}
+
+	return nil
 }

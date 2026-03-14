@@ -1,0 +1,6 @@
+with-expecter: true
+dir: mocks
+packages:
+  github.com/IlfGauhnith/ReactiveBridge/internal/queue:
+    interfaces:
+      - KinesisAPI
