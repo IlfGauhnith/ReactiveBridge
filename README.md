@@ -19,7 +19,7 @@ ReactiveBridge is a robust backend infrastructure project designed to bridge the
    - Final persistence to Amazon DynamoDB.
   
 ## Tech Stack & AWS Domains
-- Language: Go 1.21+ (utilizing `goroutines`, `context`, and `AWS SDK v2`)
+- Language: Go (utilizing `goroutines`, `context`, and `AWS SDK v2`)
 - Web Framework: `net/http`
 - Infrastructure: Kinesis, Lambda, DynamoDB, SQS (DLQ), X-Ray, Secrets Manager.
 - Deployment: AWS SAM (Serverless Application Model) / Docker.
