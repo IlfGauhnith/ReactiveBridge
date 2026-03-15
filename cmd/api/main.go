@@ -37,8 +37,6 @@ func (s *Server) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Asynchronously publish to Kinesis (or synchronously if strict durability is required)
-	// Using context from request to handle cancellations
 	if err := s.producer.Publish(r.Context(), event); err != nil {
 		log.Printf("Failed to publish event: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -53,21 +51,17 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Initialize Kinesis Producer
-	// In a real scenario, "ReactiveBridgeStream" would come from an environment variable
-	kp, err := queue.NewKinesisProducer(ctx, "ReactiveBridgeStream")
+	// Initialize SQS Producer instead of Kinesis
+	qp, err := queue.NewSQSProducer(ctx, "ReactiveBridgeQueue")
 	if err != nil {
-		// Fallback for local dev if AWS credentials aren't set, or panic.
-		// For now, we log and exit as this is critical infrastructure.
-		log.Fatalf("Failed to initialize Kinesis producer: %v", err)
+		log.Fatalf("Failed to initialize SQS producer: %v", err)
 	}
 
-	srv := &Server{producer: kp}
+	srv := &Server{producer: qp}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/events", srv.ingestHandler)
 
-	// Wrap mux with middleware
 	handler := middleware.Logger(mux)
 
 	httpServer := &http.Server{
@@ -75,7 +69,6 @@ func main() {
 		Handler: handler,
 	}
 
-	// Server start in goroutine
 	go func() {
 		log.Println("Starting server on :8080")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -83,7 +76,6 @@ func main() {
 		}
 	}()
 
-	// Graceful Shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

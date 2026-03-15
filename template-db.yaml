@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ReactiveBridge - Stateful Database Stack
+
+Resources:
+  ReactiveBridgeTable:
+    Type: AWS::DynamoDB::Table
+    # These policies ensure the table survives a stack deletion
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: ReactiveBridgeTable
+      AttributeDefinitions:
+        - AttributeName: ID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ID
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  TableName:
+    Description: DynamoDB Table Name
+    Value: !Ref ReactiveBridgeTable
+    Export:
+      # This exact string must be globally unique within your AWS Region
+      Name: ReactiveBridge-TableName
