@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ReactiveBridge Pipeline
+  SAM Template for an event-driven ingestion bridge (DVA-C02 Project)
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128 # Minimum memory to stay well within the Lambda Free Tier
+    Tracing: Active # DVA-C02 Domain: Observability (AWS X-Ray)
+
+Resources:
+  # -------------------------------------------------------------------------
+  # 1. THE INGESTION STREAM (Kinesis)
+  # -------------------------------------------------------------------------
+  ReactiveBridgeStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: ReactiveBridgeStream
+      # CRITICAL FOR COST: Provisioned with 1 shard is the cheapest option. 
+      # Do NOT use ON_DEMAND for sandbox testing.
+      StreamModeDetails:
+        StreamMode: PROVISIONED
+      ShardCount: 1
+      RetentionPeriodHours: 24
+
+  # -------------------------------------------------------------------------
+  # 2. THE STORAGE (DynamoDB)
+  # -------------------------------------------------------------------------
+  ReactiveBridgeTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ReactiveBridgeTable
+      AttributeDefinitions:
+        - AttributeName: ID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ID
+          KeyType: HASH
+      # PAY_PER_REQUEST costs $0.00 when idle. Perfect for dev environments.
+      BillingMode: PAY_PER_REQUEST
+
+  # -------------------------------------------------------------------------
+  # 3. THE CONSUMER (Lambda)
+  # -------------------------------------------------------------------------
+  EventProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: cmd/processor/
+      Handler: bootstrap      # Required handler name for Go on provided.al2023
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ReactiveBridgeTable
+      Policies:
+        # SAM Policy Templates: Grants exact Least Privilege permissions
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReactiveBridgeTable
+        - KinesisStreamReadPolicy:
+            StreamName: !Ref ReactiveBridgeStream
+      Events:
+        StreamTrigger:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt ReactiveBridgeStream.Arn
+            BatchSize: 10
+            StartingPosition: LATEST
+
+Outputs:
+  StreamName:
+    Description: Kinesis Stream Name
+    Value: !Ref ReactiveBridgeStream
+  TableName:
+    Description: DynamoDB Table Name
+    Value: !Ref ReactiveBridgeTable
