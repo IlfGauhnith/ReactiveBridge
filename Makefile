@@ -2,9 +2,7 @@
 
 generate:
 	@echo "Generating mocks..."
-	mockery
-	@echo "Ensuring mocks directory is ignored..."
-	@grep -qxF 'mocks/' .gitignore || echo 'mocks/' >> .gitignore
+	go run github.com/vektra/mockery/v2@latest
 
 test: generate
 	@echo "Running tests..."
