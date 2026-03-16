@@ -1,0 +1,11 @@
+{
+  "if": { "properties": { "event_type": { "const": "auth_audit" } } },
+  "then": {
+    "properties": {
+      "data": {
+        "if": { "properties": { "auth_method": { "const": "mfa" } } },
+        "then": { "required": ["mfa_type", "mfa_duration"] }
+      }
+    }
+  }
+}

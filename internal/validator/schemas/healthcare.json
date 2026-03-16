@@ -1,0 +1,12 @@
+{
+  "if": { "properties": { "event_type": { "const": "healthcare_visit" } } },
+  "then": {
+    "properties": {
+      "data": {
+        "if": { "properties": { "visit_type": { "const": "telemedicine" } } },
+        "then": { "required": ["video_provider", "latency_ms"] },
+        "else": { "required": ["clinic_id", "check_in_timestamp"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "if": { "properties": { "event_type": { "const": "transaction" } } },
+  "then": {
+    "properties": {
+      "data": {
+        "if": { "properties": { "status": { "const": "declined" } } },
+        "then": { "required": ["rejection_code", "retry_available"] }
+      }
+    }
+  }
+}

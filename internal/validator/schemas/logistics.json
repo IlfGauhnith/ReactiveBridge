@@ -1,0 +1,11 @@
+{
+  "if": { "properties": { "event_type": { "const": "shipment" } } },
+  "then": {
+    "properties": {
+      "data": {
+        "if": { "properties": { "carrier": { "const": "FEDEX" } } },
+        "then": { "properties": { "tracking_number": { "pattern": "^[0-9]{12}$" } } }
+      }
+    }
+  }
+}
